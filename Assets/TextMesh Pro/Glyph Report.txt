@@ -1,0 +1,23 @@
+Font: Ura Bum Bum SP  Style: Regular
+Point Size: 50   Padding: -1073741824   SP/PD Ratio: -2147484000,0%
+
+Characters included: 88/99
+Missing characters: 11
+Excluded characters: 0
+
+Characters missing from font file:
+----------------------------------------
+ID: 47	Hex: 2F	Char [/]
+ID: 92	Hex: 5C	Char [\]
+ID: 94	Hex: 5E	Char [^]
+ID: 95	Hex: 5F	Char [_]
+ID: 96	Hex: 60	Char [`]
+ID: 123	Hex: 7B	Char [{]
+ID: 124	Hex: 7C	Char [|]
+ID: 125	Hex: 7D	Char [}]
+ID: 8203	Hex: 200B	Char [​]
+ID: 8230	Hex: 2026	Char […]
+ID: 9633	Hex: 25A1	Char [□]
+
+Characters excluded from packing:
+----------------------------------------
