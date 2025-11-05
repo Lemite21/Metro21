@@ -1,124 +1,230 @@
 ﻿using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
-using UnityEngine.EventSystems;
+using System.Collections.Generic;
 
-public class RepairSystem : MonoBehaviour, IDropHandler
+public class RepairSystem : MonoBehaviour
 {
     [Header("Repair UI")]
     public GameObject repairPanel;
     public Image repairSlotIcon;
+    public TMP_Text itemNameText;
     public TMP_Text conditionText;
     public TMP_Text repairCostText;
     public Button repairButton;
+    public Button cancelButton;
 
     [Header("References")]
     private PlayerWallet playerWallet;
-    private Item currentRepairItem;
+    private InventorySystem inventory;
+    private InventoryUI inventoryUI;
+    private Item selectedRepairItem;
 
     void Start()
     {
         playerWallet = FindFirstObjectByType<PlayerWallet>();
+        inventory = FindFirstObjectByType<InventorySystem>();
+        inventoryUI = FindFirstObjectByType<InventoryUI>();
 
         if (repairPanel != null) repairPanel.SetActive(false);
 
+        // Настраиваем кнопки
         repairButton.onClick.RemoveAllListeners();
         repairButton.onClick.AddListener(RepairItem);
+
+        cancelButton.onClick.RemoveAllListeners();
+        cancelButton.onClick.AddListener(CancelRepair);
+
+        // Изначально кнопка ремонта неактивна
+        repairButton.interactable = false;
     }
 
-    // ВКЛЮЧАЕТ панель ремонта
+    // 🔹 ОТКРЫТЬ ПАНЕЛЬ РЕМОНТА
     public void ShowRepairPanel()
     {
         if (repairPanel != null)
         {
             repairPanel.SetActive(true);
-            ClearRepairSlot();
+            ClearSelection();
+            Debug.Log("Панель ремонта открыта - можно выбирать предметы");
         }
-    }
-
-    // Обработчик перетаскивания предмета в слот
-    public void OnDrop(PointerEventData eventData)
-    {
-        // Получаем перетаскиваемый предмет из системы перетаскивания
-        Item draggedItem = GetDraggedItem(eventData);
-
-        if (draggedItem != null && draggedItem.hasDurability)
+        else
         {
-            SetRepairItem(draggedItem);
+            Debug.LogError("RepairPanel не назначен в инспекторе!");
         }
     }
 
-    Item GetDraggedItem(PointerEventData eventData)
+    // 🔹 ВЫБРАТЬ ПРЕДМЕТ ДЛЯ РЕМОНТА
+    public void SelectItemForRepair(Item item)
     {
-        // Эта функция зависит от вашей системы перетаскивания
-        // Если используете стандартную Unity UI drag&drop:
-        GameObject draggedObject = eventData.pointerDrag;
-        if (draggedObject != null)
+        if (item == null) return;
+
+        // 🔹 ПРОВЕРЯЕМ МОЖНО ЛИ РЕМОНТИРОВАТЬ ЭТОТ ПРЕДМЕТ
+        if (!CanRepairItem(item))
         {
-            ItemSlotUI slot = draggedObject.GetComponent<ItemSlotUI>();
-            if (slot != null)
-            {
-                // Нужно получить Item из slot
-                return null; // Замените на вашу логику
-            }
+            Debug.Log($"Этот предмет нельзя починить: {item.itemName}");
+            return;
         }
-        return null;
+
+        // 🔹 СНИМАЕМ ПРЕДЫДУЩЕЕ ВЫДЕЛЕНИЕ
+        ClearSelection();
+
+        // 🔹 ВЫБИРАЕМ НОВЫЙ ПРЕДМЕТ
+        selectedRepairItem = item;
+        UpdateRepairUI();
+
+        Debug.Log($"Выбран для ремонта: {item.itemName}");
     }
 
-    void SetRepairItem(Item item)
+    // 🔹 ПРОВЕРКА МОЖНО ЛИ РЕМОНТИРОВАТЬ ПРЕДМЕТ
+    private bool CanRepairItem(Item item)
     {
-        currentRepairItem = item;
+        if (item == null) return false;
 
-        // Обновляем UI
-        repairSlotIcon.sprite = item.icon;
+        // Можно ремонтировать только оружие и броню с прочностью
+        bool canRepair = (item.type == ItemType.Weapon || item.type == ItemType.Armor) &&
+                        item.hasDurability;
+
+        Debug.Log($"Проверка предмета {item.itemName}: type={item.type}, hasDurability={item.hasDurability}, canRepair={canRepair}");
+
+        return canRepair;
+    }
+
+    // 🔹 ОБНОВИТЬ UI РЕМОНТА
+    private void UpdateRepairUI()
+    {
+        if (selectedRepairItem == null) return;
+
+        // Обновляем информацию о предмете
+        repairSlotIcon.sprite = selectedRepairItem.icon;
         repairSlotIcon.enabled = true;
+        itemNameText.text = selectedRepairItem.itemName;
 
-        UpdateRepairInfo();
-    }
-
-    void UpdateRepairInfo()
-    {
-        if (currentRepairItem == null) return;
-
-        int repairCost = currentRepairItem.GetRepairCost();
-        float conditionPercent = (currentRepairItem.currentDurability / currentRepairItem.maxDurability) * 100f;
+        // Рассчитываем стоимость и состояние
+        int repairCost = selectedRepairItem.GetRepairCost();
+        float conditionPercent = (selectedRepairItem.currentDurability / selectedRepairItem.maxDurability) * 100f;
 
         conditionText.text = $"Состояние: {conditionPercent:F0}%";
         repairCostText.text = $"Цена ремонта: {repairCost} руб";
 
-        repairButton.interactable = currentRepairItem.NeedsRepair && playerWallet.HasEnoughMoney(repairCost);
+        // 🔹 АКТИВИРУЕМ КНОПКУ ТОЛЬКО ЕСЛИ ПРЕДМЕТ НУЖДАЕТСЯ В РЕМОНТЕ И ХВАТАЕТ ДЕНЕГ
+        bool canRepair = selectedRepairItem.NeedsRepair && playerWallet.HasEnoughMoney(repairCost);
+        repairButton.interactable = canRepair;
+
+        Debug.Log($"Обновлена информация: состояние {conditionPercent:F0}%, цена {repairCost}, можно чинить: {canRepair}");
     }
 
-    void RepairItem()
+    // 🔹 ПОЧИНИТЬ ПРЕДМЕТ
+    private void RepairItem()
     {
-        if (currentRepairItem == null || !currentRepairItem.NeedsRepair) return;
+        if (selectedRepairItem == null || !selectedRepairItem.NeedsRepair)
+        {
+            Debug.Log("Нечего чинить или предмет не требует ремонта");
+            return;
+        }
 
-        int repairCost = currentRepairItem.GetRepairCost();
+        int repairCost = selectedRepairItem.GetRepairCost();
 
         if (playerWallet.SpendMoney(repairCost))
         {
-            currentRepairItem.Repair();
-            Debug.Log($"✅ Отремонтировано: {currentRepairItem.itemName} за {repairCost} руб");
-            UpdateRepairInfo();
+            // Восстанавливаем прочность до максимума
+            selectedRepairItem.Repair();
+
+            Debug.Log($"✅ Отремонтировано: {selectedRepairItem.itemName} за {repairCost} руб");
+
+            // 🔹 СКРЫВАЕМ ИНВЕНТАРЬ ПОСЛЕ РЕМОНТА
+            if (inventoryUI != null)
+            {
+                inventoryUI.HideInventoryPanels();
+            }
+
+            // 🔹 ЗАКРЫВАЕМ ПАНЕЛЬ РЕМОНТА
+            CloseRepairPanel();
+
+            // Обновляем инвентарь
+            if (inventoryUI != null) inventoryUI.RefreshUI();
+        }
+        else
+        {
+            Debug.Log("Недостаточно денег для ремонта");
         }
     }
 
-    void ClearRepairSlot()
+    // 🔹 ОТМЕНА РЕМОНТА
+    private void CancelRepair()
     {
-        currentRepairItem = null;
-        repairSlotIcon.enabled = false;
-        conditionText.text = "Состояние: -";
-        repairCostText.text = "Цена ремонта: -";
-        repairButton.interactable = false;
+        ClearSelection();
+        CloseRepairPanel();
     }
 
-    // В RepairSystem.cs добавьте этот метод:
+    // 🔹 ОЧИСТИТЬ ВЫБОР
+    private void ClearSelection()
+    {
+        selectedRepairItem = null;
+
+        if (repairSlotIcon != null) repairSlotIcon.enabled = false;
+        if (itemNameText != null) itemNameText.text = "Выберите предмет";
+        if (conditionText != null) conditionText.text = "Состояние: -";
+        if (repairCostText != null) repairCostText.text = "Цена ремонта: -";
+        if (repairButton != null) repairButton.interactable = false;
+
+        // 🔹 СНИМАЕМ ВЫДЕЛЕНИЕ С ПРЕДМЕТОВ В ИНВЕНТАРЕ
+        UpdateInventoryHighlight();
+    }
+
+    // 🔹 ПРОВЕРИТЬ ВЫБРАН ЛИ ПРЕДМЕТ
+    public bool IsItemSelected(Item item)
+    {
+        return selectedRepairItem == item;
+    }
+
+    // 🔹 ОБНОВИТЬ ПОДСВЕТКУ В ИНВЕНТАРЕ
+    private void UpdateInventoryHighlight()
+    {
+        if (inventoryUI != null && inventoryUI.itemSlotsParent != null)
+        {
+            foreach (Transform slotTransform in inventoryUI.itemSlotsParent)
+            {
+                ItemSlotUI slot = slotTransform.GetComponent<ItemSlotUI>();
+                if (slot != null)
+                {
+                    Item item = slot.GetItem();
+                    Image slotImage = slotTransform.GetComponent<Image>();
+                    Outline outline = slotTransform.GetComponent<Outline>();
+
+                    if (outline == null)
+                    {
+                        outline = slotTransform.gameObject.AddComponent<Outline>();
+                        outline.effectColor = Color.blue; // 🔹 СИНИЙ ЦВЕТ ДЛЯ РЕМОНТА
+                        outline.effectDistance = new Vector2(3, 3);
+                        outline.enabled = false;
+                    }
+
+                    if (item != null && IsItemSelected(item))
+                    {
+                        // 🔹 ПОДСВЕТКА ВЫБРАННОГО ПРЕДМЕТА
+                        slotImage.color = new Color(0.7f, 0.8f, 1f, 1f); // Светло-синий
+                        outline.enabled = true;
+                    }
+                    else
+                    {
+                        // Обычный вид
+                        slotImage.color = Color.white;
+                        if (outline != null) outline.enabled = false;
+                    }
+                }
+            }
+        }
+    }
+
+    // 🔹 ЗАКРЫТЬ ПАНЕЛЬ РЕМОНТА
     public void CloseRepairPanel()
     {
         if (repairPanel != null)
+        {
             repairPanel.SetActive(false);
-
-        // Очищаем слот ремонта если нужно
-        ClearRepairSlot();
+            ClearSelection();
+            Debug.Log("Панель ремонта закрыта");
+        }
     }
 }

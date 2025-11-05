@@ -178,4 +178,15 @@ public class InventoryUI : MonoBehaviour
             currentlyShownItem = null;
         }
     }
+
+    // 🔹 СКРЫТЬ ПАНЕЛИ ИНВЕНТАРЯ
+    public void HideInventoryPanels()
+    {
+        if (inventoryPanel != null) inventoryPanel.SetActive(false);
+        if (equipmentPanel != null) equipmentPanel.SetActive(false);
+        HideDescriptionPanel();
+
+        Debug.Log("Панели инвентаря скрыты после ремонта");
+    }
+
 }

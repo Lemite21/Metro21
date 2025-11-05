@@ -221,11 +221,14 @@ public class StationManager : MonoBehaviour
 
         SetActiveState(repairmanBackground, true);
 
+        // 🔹 НАСТРАИВАЕМ КНОПКУ РЕМОНТА
         repairButton.onClick.RemoveAllListeners();
         repairButton.onClick.AddListener(repairSystem.ShowRepairPanel);
 
         backFromRepairmanButton.onClick.RemoveAllListeners();
         backFromRepairmanButton.onClick.AddListener(ExitRepairmanMode);
+
+        Debug.Log("Ремонтник: кнопка настроена");
     }
 
     public void ExitRepairmanMode()

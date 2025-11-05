@@ -19,7 +19,7 @@ public class ItemSlotUI : MonoBehaviour, IPointerClickHandler
         if (outline == null)
         {
             outline = gameObject.AddComponent<Outline>();
-            outline.effectColor = Color.yellow;
+            outline.effectColor = Color.blue; // Синий для ремонта
             outline.effectDistance = new Vector2(3, 3);
             outline.enabled = false;
         }
@@ -56,18 +56,26 @@ public class ItemSlotUI : MonoBehaviour, IPointerClickHandler
     {
         if (item == null) return;
 
-        // Находим TraderManager
-        TraderManager traderManager = FindFirstObjectByType<TraderManager>();
-        if (traderManager != null && traderManager.sellPanel != null && traderManager.sellPanel.activeSelf)
+        // Находим RepairSystem
+        RepairSystem repairSystem = FindFirstObjectByType<RepairSystem>();
+        if (repairSystem != null && repairSystem.repairPanel != null && repairSystem.repairPanel.activeSelf)
         {
-            // Если открыта панель продажи - выделяем/снимаем выделение
-            traderManager.ToggleItemSelection(item);
+            // 🔹 ЕСЛИ ОТКРЫТА ПАНЕЛЬ РЕМОНТА - ВЫБИРАЕМ ПРЕДМЕТ ДЛЯ РЕМОНТА
+            repairSystem.SelectItemForRepair(item);
             UpdateSelectionHighlight();
         }
         else
         {
-            // Иначе показываем описание предмета (обычное поведение)
-            inventoryUI.ShowItemDescription(item);
+            // Иначе обычное поведение (описание или продажа)
+            TraderManager traderManager = FindFirstObjectByType<TraderManager>();
+            if (traderManager != null && traderManager.sellPanel != null && traderManager.sellPanel.activeSelf)
+            {
+                traderManager.ToggleItemSelection(item);
+            }
+            else
+            {
+                inventoryUI.ShowItemDescription(item);
+            }
         }
     }
 
@@ -76,27 +84,42 @@ public class ItemSlotUI : MonoBehaviour, IPointerClickHandler
     {
         if (item == null) return;
 
+        RepairSystem repairSystem = FindFirstObjectByType<RepairSystem>();
         TraderManager traderManager = FindFirstObjectByType<TraderManager>();
-        if (traderManager != null && traderManager.sellPanel != null && traderManager.sellPanel.activeSelf)
+
+        Image slotImage = GetComponent<Image>();
+
+        if (repairSystem != null && repairSystem.repairPanel != null && repairSystem.repairPanel.activeSelf)
         {
-            Image slotImage = GetComponent<Image>();
-            if (traderManager.IsItemSelected(item))
+            // 🔹 РЕЖИМ РЕМОНТА - СИНЯЯ ПОДСВЕТКА
+            if (repairSystem.IsItemSelected(item))
             {
-                // 🔹 СИЛЬНАЯ ПОДСВЕТКА
-                slotImage.color = new Color(1f, 0.9f, 0.4f, 1f); // Ярко-желтый
+                slotImage.color = new Color(0.7f, 0.8f, 1f, 1f); // Светло-синий
                 if (outline != null) outline.enabled = true;
             }
             else
             {
-                // Обычный вид
+                slotImage.color = Color.white;
+                if (outline != null) outline.enabled = false;
+            }
+        }
+        else if (traderManager != null && traderManager.sellPanel != null && traderManager.sellPanel.activeSelf)
+        {
+            // Режим продажи (старая логика)
+            if (traderManager.IsItemSelected(item))
+            {
+                slotImage.color = new Color(1f, 0.9f, 0.4f, 1f); // Желтый
+                if (outline != null) outline.enabled = true;
+            }
+            else
+            {
                 slotImage.color = Color.white;
                 if (outline != null) outline.enabled = false;
             }
         }
         else
         {
-            // Если панель продажи закрыта - обычный вид
-            Image slotImage = GetComponent<Image>();
+            // Обычный режим
             slotImage.color = Color.white;
             if (outline != null) outline.enabled = false;
         }
