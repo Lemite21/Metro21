@@ -14,14 +14,14 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   itemName: "\u0425\u043B\u0435\u0431"
   description: 
-  icon: {fileID: -2181515304249417987, guid: db2c6a602cf2c5248b5c3630e1d8f110, type: 3}
+  icon: {fileID: -2181515304249417987, guid: 30e2cdf5fe01d3f4d9c1238933ae51e5, type: 3}
   isStackable: 1
-  maxStackSize: 6
-  currentStack: 1
+  maxStackSize: 5
+  currentStack: 5
   type: 2
   armorType: 0
   weaponType: 0
-  buyPrice: 50
+  buyPrice: 20
   sellPrice: 10
   hasDurability: 0
   currentDurability: 100
