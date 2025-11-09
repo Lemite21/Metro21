@@ -27,10 +27,11 @@ MonoBehaviour:
   currentDurability: 100
   maxDurability: 100
   minDamage: 15
-  maxDamage: 60
+  maxDamage: 50
   ammoType: 2
   maxAmmo: 12
   currentAmmo: 12
+  shotsPerAttack: 2
   armorValue: 0
   healthRestore: 0
   foodRestore: 0

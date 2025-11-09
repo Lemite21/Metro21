@@ -133,9 +133,10 @@ public class RepairSystem : MonoBehaviour
             Debug.Log($"✅ Отремонтировано: {selectedRepairItem.itemName} за {repairCost} руб");
 
             // 🔹 СКРЫВАЕМ ИНВЕНТАРЬ ПОСЛЕ РЕМОНТА
+            // На:
             if (inventoryUI != null)
             {
-                inventoryUI.HideInventoryPanels();
+                inventoryUI.HideAllInventoryPanels();
             }
 
             // 🔹 ЗАКРЫВАЕМ ПАНЕЛЬ РЕМОНТА

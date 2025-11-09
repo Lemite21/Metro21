@@ -21,16 +21,17 @@ MonoBehaviour:
   type: 4
   armorType: 0
   weaponType: 0
-  buyPrice: 150
+  buyPrice: 100
   sellPrice: 50
   hasDurability: 0
   currentDurability: 100
   maxDurability: 100
   minDamage: 0
   maxDamage: 0
-  ammoType: 0
+  ammoType: 1
   maxAmmo: 0
   currentAmmo: 0
+  shotsPerAttack: 1
   armorValue: 0
   healthRestore: 0
   foodRestore: 0

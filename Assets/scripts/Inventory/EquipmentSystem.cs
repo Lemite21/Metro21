@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using System.Collections.Generic;
+using UnityEngine;
 
 [System.Serializable]
 public class EquipmentSlot
@@ -149,4 +150,45 @@ public class EquipmentSystem : MonoBehaviour
         if (weapon == null) return false;
         return weapon.ReloadWeapon(availableAmmo);
     }
+
+    // 🔹 МЕТОД ДЛЯ ПОЛУЧЕНИЯ ВСЕГО ОРУЖИЯ ИГРОКА
+    public List<Item> GetAllWeapons()
+    {
+        List<Item> weapons = new List<Item>();
+
+        if (weaponMain.item != null && weaponMain.item.type == ItemType.Weapon)
+            weapons.Add(weaponMain.item);
+
+        if (weaponSecondary.item != null && weaponSecondary.item.type == ItemType.Weapon)
+            weapons.Add(weaponSecondary.item);
+
+        return weapons;
+    }
+
+    // 🔹 МЕТОД ДЛЯ ПРОВЕРКИ - НУЖНА ЛИ ПЕРЕЗАРЯДКА ХОТЯ БЫ ОДНОМУ ОРУЖИЮ
+    // 🔹 МЕТОД ДЛЯ ПРОВЕРКИ - НУЖНА ЛИ ПЕРЕЗАРЯДКА ХОТЯ БЫ ОДНОМУ ОРУЖИЮ
+    public bool AnyWeaponNeedsReload(InventorySystem inventory)
+    {
+        if (weaponMain.item != null && weaponMain.item.type == ItemType.Weapon)
+        {
+            if (inventory.NeedsReload(weaponMain.item))
+            {
+                Debug.Log($"Основное оружие {weaponMain.item.itemName} нуждается в перезарядке");
+                return true;
+            }
+        }
+
+        if (weaponSecondary.item != null && weaponSecondary.item.type == ItemType.Weapon)
+        {
+            if (inventory.NeedsReload(weaponSecondary.item))
+            {
+                Debug.Log($"Дополнительное оружие {weaponSecondary.item.itemName} нуждается в перезарядке");
+                return true;
+            }
+        }
+
+        Debug.Log("Ни одно оружие не нуждается в перезарядке");
+        return false;
+    }
+
 }

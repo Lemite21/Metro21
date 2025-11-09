@@ -7975,23 +7975,7 @@ MonoBehaviour:
     health: 200
     minDamage: 5
     maxDamage: 25
-    lootTable:
-    - item: {fileID: 11400000, guid: 710a777f3d132b348b05778b152d62e8, type: 2}
-      minQuantity: 1
-      maxQuantity: 3
-      dropChance: 100
-    - item: {fileID: 11400000, guid: c0333afe636b4144eb37555974577305, type: 2}
-      minQuantity: 1
-      maxQuantity: 1
-      dropChance: 15
-    - item: {fileID: 11400000, guid: de9c671ae4fdb0a4b8ccb78d4ecbb56e, type: 2}
-      minQuantity: 1
-      maxQuantity: 1
-      dropChance: 10
-    - item: {fileID: 11400000, guid: 53f6128693f080d44915b144dd126b7f, type: 2}
-      minQuantity: 1
-      maxQuantity: 1
-      dropChance: 10
+    lootTable: []
   inventoryUI: {fileID: 1744834805}
 --- !u!4 &1147085104
 Transform:
@@ -8431,12 +8415,16 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   items:
-  - item: {fileID: 0}
-    count: 0
-  - item: {fileID: 0}
-    count: 0
-  - item: {fileID: 0}
-    count: 0
+  - item: {fileID: 11400000, guid: a467516048caf8c49a049d5ed3e8f37f, type: 2}
+    count: 100
+  - item: {fileID: 11400000, guid: 6bdb6f7f33f21a646afa8a2a1a4f417e, type: 2}
+    count: 100
+  - item: {fileID: 11400000, guid: 89a5380657f7d274ab834f4ccaadc2c0, type: 2}
+    count: 100
+  - item: {fileID: 11400000, guid: 9fb49388a5da5324397efac2df805ad4, type: 2}
+    count: 1
+  - item: {fileID: 11400000, guid: c70a228419b976441bebf78a6a856dfd, type: 2}
+    count: 1
   maxSlots: 20
 --- !u!1 &1193774828
 GameObject:
@@ -12485,6 +12473,8 @@ MonoBehaviour:
   itemSlotsParent: {fileID: 1237797633}
   itemSlotPrefab: {fileID: 3353186997588504358, guid: d12649bee6d397249b203222d36cde6b, type: 3}
   inventoryButton: {fileID: 1258223542}
+  disabledInventoryButton: {fileID: 1544125840}
+  closeAllUIButton: {fileID: 67587698}
   inventory: {fileID: 1180517566}
   equipmentPanel: {fileID: 116533628}
 --- !u!1 &1777113289
@@ -14391,6 +14381,7 @@ Transform:
   - {fileID: 469785089}
   - {fileID: 1147085104}
   - {fileID: 202655508}
+  - {fileID: 2090535210}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &2029076117
@@ -14922,6 +14913,50 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2060345945}
   m_CullTransparentMesh: 1
+--- !u!1 &2090535209
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2090535210}
+  - component: {fileID: 2090535211}
+  m_Layer: 0
+  m_Name: ReloadManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &2090535210
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2090535209}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 2023068063}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &2090535211
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2090535209}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9eb9cdc7f9fa95f40b40db005130a958, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &2108000645
 GameObject:
   m_ObjectHideFlags: 0

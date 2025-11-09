@@ -13,5 +13,14 @@ MonoBehaviour:
   m_Name: BasicTraderInventory
   m_EditorClassIdentifier: 
   availableItems:
-  - {fileID: 11400000, guid: 710a777f3d132b348b05778b152d62e8, type: 2}
+  - {fileID: 11400000, guid: a467516048caf8c49a049d5ed3e8f37f, type: 2}
+  - {fileID: 11400000, guid: 6bdb6f7f33f21a646afa8a2a1a4f417e, type: 2}
+  - {fileID: 11400000, guid: 89a5380657f7d274ab834f4ccaadc2c0, type: 2}
+  - {fileID: 11400000, guid: c70a228419b976441bebf78a6a856dfd, type: 2}
+  - {fileID: 11400000, guid: c3379ada34e45d0478167fc497dac3cd, type: 2}
+  - {fileID: 11400000, guid: 9fb49388a5da5324397efac2df805ad4, type: 2}
   - {fileID: 11400000, guid: 41d63cfcbfa47e74eb545b5748d70523, type: 2}
+  - {fileID: 11400000, guid: 619293af18ddb004291ddcb0ea2ce46e, type: 2}
+  - {fileID: 11400000, guid: 7190a874e83d2484da4b421a48e756cf, type: 2}
+  - {fileID: 11400000, guid: 9745ce26989036645bff5047d90a1576, type: 2}
+  - {fileID: 11400000, guid: 5821cf1ece0975f40aa2119b80625b0e, type: 2}

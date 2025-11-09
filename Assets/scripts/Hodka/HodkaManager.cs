@@ -87,9 +87,18 @@ public class HodkaManager : MonoBehaviour
     }
 
     // 🔹 ВОЗВРАТ В ХОДКУ ПОСЛЕ УСПЕШНОГО ПОБЕГА
+    // 🔹 ВОЗВРАТ В ХОДКУ ПОСЛЕ УСПЕШНОГО ПОБЕГА
+    // 🔹 ВОЗВРАТ В ХОДКУ ПОСЛЕ УСПЕШНОГО ПОБЕГА
     public void ReturnToJourneyAfterEscape()
     {
-        SetNormalBackground(); // 🔹 Возвращаем обычный фон
+        // 🔹 УБЕДИМСЯ ЧТО КНОПКА ИНВЕНТАРЯ В ПРАВИЛЬНОМ СОСТОЯНИИ (ЗАМЕНИЛИ UnlockInventory)
+        InventoryUI inventoryUI = FindFirstObjectByType<InventoryUI>();
+        if (inventoryUI != null)
+        {
+            inventoryUI.SetInventoryButtonState(false); // Бой завершен
+        }
+
+        SetNormalBackground();
         ShowJourneyButtons();
     }
 
@@ -191,8 +200,17 @@ public class HodkaManager : MonoBehaviour
     }
 
     // Вызывается из CombatSystem когда бой заканчивается
+    // Вызывается из CombatSystem когда бой заканчивается
+    // Вызывается из CombatSystem когда бой заканчивается
     public void EndCombatAndReturnToJourney()
     {
+        // 🔹 УБЕДИМСЯ ЧТО КНОПКА ИНВЕНТАРЯ В ПРАВИЛЬНОМ СОСТОЯНИИ (ЗАМЕНИЛИ UnlockInventory)
+        InventoryUI inventoryUI = FindFirstObjectByType<InventoryUI>();
+        if (inventoryUI != null)
+        {
+            inventoryUI.SetInventoryButtonState(false); // Бой завершен
+        }
+
         // 🔹 Возвращаем обычный фон
         SetNormalBackground();
 

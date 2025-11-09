@@ -73,6 +73,7 @@ public class Item : ScriptableObject
     public AmmoType ammoType = AmmoType.None;
     public int maxAmmo = 0;
     public int currentAmmo = 0;
+    public int shotsPerAttack = 1;
 
     // 🔹 НОВЫЕ ПОЛЯ ДЛЯ СИСТЕМЫ БОЯ - БРОНЯ
     [Header("Armor Combat Settings")]
@@ -94,6 +95,7 @@ public class Item : ScriptableObject
     public bool NeedsRepair => hasDurability && currentDurability < maxDurability;
 
     // 🔹 ОБНОВЛЕННЫЙ МЕТОД ДЛЯ ИСПОЛЬЗОВАНИЯ ПРЕДМЕТА (оружие в бою)
+    // 🔹 ОБНОВЛЕННЫЙ МЕТОД ДЛЯ ОДИНОЧНОГО ВЫСТРЕЛА
     public void UseInCombat()
     {
         if (!hasDurability) return;
@@ -101,7 +103,7 @@ public class Item : ScriptableObject
         float durabilityLoss = Random.Range(1f, 3f);
         currentDurability = Mathf.Max(0, currentDurability - durabilityLoss);
 
-        // 🔹 ТРАТИМ ПАТРОНЫ ЕСЛИ ЭТО ОРУЖИЕ
+        // Тратим патроны если это оружие
         if (type == ItemType.Weapon && currentAmmo > 0)
         {
             currentAmmo--;
@@ -191,4 +193,23 @@ public class Item : ScriptableObject
         if (type != ItemType.Weapon) return 0;
         return Random.Range(minDamage, maxDamage + 1);
     }
+
+    // 🔹 НОВЫЙ МЕТОД ДЛЯ СТРЕЛЬБЫ ОЧЕРЕДЬЮ
+    public int ShootBurst()
+    {
+        if (currentAmmo <= 0) return 0;
+
+        int shotsFired = Mathf.Min(shotsPerAttack, currentAmmo);
+        currentAmmo -= shotsFired;
+
+        // Тратим прочность за всю очередь
+        if (hasDurability)
+        {
+            float durabilityLoss = Random.Range(1f, 3f) * shotsFired;
+            currentDurability = Mathf.Max(0, currentDurability - durabilityLoss);
+        }
+
+        return shotsFired;
+    }
+
 }

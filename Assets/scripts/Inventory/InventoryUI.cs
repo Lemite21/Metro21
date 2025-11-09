@@ -9,10 +9,15 @@ public class InventoryUI : MonoBehaviour
     public GameObject itemDescriptionPanel;
     public Transform itemSlotsParent;
     public GameObject itemSlotPrefab;
-    public Button inventoryButton;
+
+    [Header("Inventory Buttons")]
+    public Button inventoryButton; // 🔹 Обычная кнопка инвентаря
+    public Button disabledInventoryButton; // 🔹 Серая/неактивная кнопка
+    public Button closeAllUIButton; // 🔹 КНОПКА ЗАКРЫТИЯ ВСЕГО UI
 
     [Header("References")]
     public InventorySystem inventory;
+    public GameObject equipmentPanel;
 
     private List<GameObject> slotInstances = new List<GameObject>();
     private Item currentlyShownItem = null;
@@ -26,9 +31,10 @@ public class InventoryUI : MonoBehaviour
         {
             Debug.LogError("InventorySystem не найден!");
         }
-    }
 
-    public GameObject equipmentPanel;
+        // 🔹 УБЕДИМСЯ ЧТО КНОПКИ В ПРАВИЛЬНОМ СОСТОЯНИИ ПРИ СТАРТЕ
+        SetInventoryButtonState(false); // Бой не активен
+    }
 
     public void ToggleInventory()
     {
@@ -54,6 +60,77 @@ public class InventoryUI : MonoBehaviour
         }
     }
 
+    // 🔹 НОВЫЙ МЕТОД ДЛЯ ЗАКРЫТИЯ ВСЕГО UI
+    public void CloseAllUI()
+    {
+        Debug.Log("🔒 Закрытие всего UI...");
+
+        // Закрываем инвентарь если открыт
+        if (inventoryPanel != null && inventoryPanel.activeSelf)
+        {
+            inventoryPanel.SetActive(false);
+            equipmentPanel.SetActive(false);
+            HideDescriptionPanel();
+        }
+
+        // Закрываем другие системы
+        CloseOtherUI();
+
+        Debug.Log("✅ Весь UI закрыт");
+    }
+
+    // 🔹 МЕТОД ДЛЯ ЗАКРЫТИЯ ДРУГИХ UI СИСТЕМ
+    private void CloseOtherUI()
+    {
+        // Закрываем торговые панели
+        TraderManager traderManager = FindFirstObjectByType<TraderManager>();
+        if (traderManager != null)
+        {
+            traderManager.CloseAllTraderPanels();
+        }
+
+        // Закрываем панель ремонта
+        RepairSystem repairSystem = FindFirstObjectByType<RepairSystem>();
+        if (repairSystem != null)
+        {
+            repairSystem.CloseRepairPanel();
+        }
+    }
+
+    // 🔹 ОСНОВНОЙ МЕТОД ДЛЯ УПРАВЛЕНИЯ КНОПКАМИ ИНВЕНТАРЯ
+    public void SetInventoryButtonState(bool combatActive)
+    {
+        IsLocked = combatActive;
+
+        if (inventoryButton != null && disabledInventoryButton != null)
+        {
+            if (combatActive)
+            {
+                // 🔹 БОЙ АКТИВЕН - показываем серую кнопку, скрываем обычную
+                inventoryButton.gameObject.SetActive(false);
+                disabledInventoryButton.gameObject.SetActive(true);
+
+                // 🔹 ЗАКРЫВАЕМ ИНВЕНТАРЬ ЕСЛИ ОН БЫЛ ОТКРЫТ
+                if (inventoryPanel != null && inventoryPanel.activeSelf)
+                {
+                    inventoryPanel.SetActive(false);
+                    if (equipmentPanel != null) equipmentPanel.SetActive(false);
+                    HideDescriptionPanel();
+                }
+
+                Debug.Log("🎒 Кнопка инвентаря: серая (бой активен)");
+            }
+            else
+            {
+                // 🔹 БОЙ НЕ АКТИВЕН - показываем обычную кнопку, скрываем серую
+                inventoryButton.gameObject.SetActive(true);
+                disabledInventoryButton.gameObject.SetActive(false);
+                Debug.Log("🎒 Кнопка инвентаря: обычная (бой завершен)");
+            }
+        }
+    }
+
+    // 🔹 ДЛЯ СОВМЕСТИМОСТИ СО СТАРЫМИ СКРИПТАМИ
     public void LockInventory()
     {
         IsLocked = true;
@@ -92,37 +169,25 @@ public class InventoryUI : MonoBehaviour
             inventoryButton.gameObject.SetActive(false);
         }
 
-        // Дополнительно ищем кнопки по имени (исправленная версия)
-        GameObject[] allObjects = FindObjectsByType<GameObject>(FindObjectsSortMode.None);
-        foreach (GameObject obj in allObjects)
+        // Скрываем серую кнопку если она видима
+        if (disabledInventoryButton != null)
         {
-            if (obj.name.Contains("Inventory") ||
-                obj.name.Contains("инвентар") ||
-                obj.name.Contains("Инвентар"))
-            {
-                obj.SetActive(false);
-            }
+            disabledInventoryButton.gameObject.SetActive(false);
         }
     }
 
     private void ShowAllInventoryButtons()
     {
-        // Показываем основную кнопку если она назначена
+        // Показываем обычную кнопку
         if (inventoryButton != null)
         {
             inventoryButton.gameObject.SetActive(true);
         }
 
-        // Дополнительно ищем кнопки по имени (исправленная версия)
-        GameObject[] allObjects = FindObjectsByType<GameObject>(FindObjectsSortMode.None);
-        foreach (GameObject obj in allObjects)
+        // Скрываем серую кнопку
+        if (disabledInventoryButton != null)
         {
-            if (obj.name.Contains("Inventory") ||
-                obj.name.Contains("инвентар") ||
-                obj.name.Contains("Инвентар"))
-            {
-                obj.SetActive(true);
-            }
+            disabledInventoryButton.gameObject.SetActive(false);
         }
     }
 
@@ -189,4 +254,9 @@ public class InventoryUI : MonoBehaviour
         Debug.Log("Панели инвентаря скрыты после ремонта");
     }
 
+    // 🔹 СКРЫТЬ ВСЕ ПАНЕЛИ ИНВЕНТАРЯ (для RepairSystem)
+    public void HideAllInventoryPanels()
+    {
+        HideInventoryPanels();
+    }
 }

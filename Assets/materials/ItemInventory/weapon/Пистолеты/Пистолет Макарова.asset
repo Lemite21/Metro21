@@ -31,6 +31,7 @@ MonoBehaviour:
   ammoType: 1
   maxAmmo: 7
   currentAmmo: 7
+  shotsPerAttack: 2
   armorValue: 0
   healthRestore: 0
   foodRestore: 0

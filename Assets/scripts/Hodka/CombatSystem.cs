@@ -90,22 +90,23 @@ public class CombatSystem : MonoBehaviour
         coverButton.onClick.AddListener(OnCover);
     }
 
+    // 🔹 ИСПРАВЛЕННЫЙ МЕТОД НАЧАЛА БОЯ
     public void StartCombat(EnemyType enemyType)
     {
-        Debug.Log("⚔️ НАЧАЛО БОЯ - БЛОКИРУЕМ ИНВЕНТАРЬ");
+        Debug.Log("⚔️ НАЧАЛО БОЯ - МЕНЯЕМ КНОПКУ ИНВЕНТАРЯ");
 
         combatActive = true;
         playerTurn = true;
         currentEnemyType = enemyType;
 
-        // 🔹 БЛОКИРОВКА ИНВЕНТАРЯ
+        // 🔹 МЕНЯЕМ КНОПКУ ИНВЕНТАРЯ НА СЕРУЮ (НЕ УДАЛЯЕМ ИНВЕНТАРЬ!)
         if (inventoryUI != null)
         {
-            inventoryUI.LockInventory();
+            inventoryUI.SetInventoryButtonState(true); // Бой активен
         }
         else
         {
-            Debug.LogError("❌ InventoryUI не найден для блокировки!");
+            Debug.LogError("❌ InventoryUI не найден для смены кнопки!");
         }
 
         // Настраиваем врага
@@ -143,15 +144,26 @@ public class CombatSystem : MonoBehaviour
             enemyHealthText.text = $"{currentEnemyHealth}";
 
         // Проверяем доступность оружия
-        bool hasMainWeapon = equipment.weaponMain.item != null && !equipment.weaponMain.item.IsWeaponEmpty();
-        bool hasSecondaryWeapon = equipment.weaponSecondary.item != null && !equipment.weaponSecondary.item.IsWeaponEmpty();
+        bool hasMainWeapon = equipment.weaponMain.item != null && !inventory.IsWeaponEmpty(equipment.weaponMain.item);
+        bool hasSecondaryWeapon = equipment.weaponSecondary.item != null && !inventory.IsWeaponEmpty(equipment.weaponSecondary.item);
+
+        // 🔹 ИСПОЛЬЗУЕМ НОВЫЙ МЕНЕДЖЕР ДЛЯ ПРОВЕРКИ ПЕРЕЗАРЯДКИ
+        ReloadManager reloadManager = FindFirstObjectByType<ReloadManager>();
+        bool needsReload = reloadManager != null && reloadManager.CanReloadAnyWeapon();
+
+        // 🔹 ДОБАВИМ ДЕТАЛЬНУЮ ОТЛАДКУ
+        Debug.Log($"Проверка перезарядки: доступно = {needsReload}");
+        if (reloadManager != null)
+        {
+            Debug.Log($"Статус перезарядки: {reloadManager.GetReloadStatus()}");
+        }
 
         // Блокируем кнопки во время хода противника
         bool buttonsInteractable = combatActive && playerTurn;
 
         attackButton.interactable = hasMainWeapon && playerStats.energy >= 30 && buttonsInteractable;
         secondaryWeaponButton.interactable = hasSecondaryWeapon && playerStats.energy >= 15 && buttonsInteractable;
-        reloadButton.interactable = playerStats.energy >= 10 && buttonsInteractable;
+        reloadButton.interactable = needsReload && playerStats.energy >= 10 && buttonsInteractable;
         escapeButton.interactable = buttonsInteractable;
         coverButton.interactable = buttonsInteractable;
 
@@ -198,6 +210,7 @@ public class CombatSystem : MonoBehaviour
     }
 
     // ПОСЛЕДОВАТЕЛЬНОСТЬ АТАКИ С ЗАДЕРЖКАМИ
+    // 🔹 ОБНОВЛЕННЫЙ МЕТОД АТАКИ С ОЧЕРЕДЬЮ
     IEnumerator PerformAttackSequence(Item weapon, int energyCost, string weaponType)
     {
         playerTurn = false;
@@ -206,7 +219,7 @@ public class CombatSystem : MonoBehaviour
         // Проверка клина
         if (CheckJamming(weapon))
         {
-            AddCombatLog($"{weapon.itemName} заклинило");
+            AddCombatLog($"{weapon.itemName} заклинило!");
             playerStats.ChangeEnergy(-energyCost);
             yield return new WaitForSeconds(2f);
             StartCoroutine(EnemyTurnSequence());
@@ -216,22 +229,41 @@ public class CombatSystem : MonoBehaviour
         // Проверка патронов
         if (weapon.IsWeaponEmpty())
         {
-            AddCombatLog($"{weapon.itemName} пусто");
+            AddCombatLog($"{weapon.itemName} пусто!");
             playerTurn = true;
             SetButtonsInteractable(true);
             yield break;
         }
 
-        // Наносим урон
-        int damage = weapon.GetWeaponDamage();
-        currentEnemyHealth -= damage;
+        // 🔹 СТРЕЛЬБА ОЧЕРЕДЬЮ ДЛЯ АВТОМАТОВ
+        int shotsFired = 1;
+        int totalDamage = 0;
 
-        // Используем оружие
-        weapon.UseInCombat();
+        if (weapon.shotsPerAttack > 1)
+        {
+            // Автомат - стреляем очередью
+            shotsFired = weapon.ShootBurst();
+            for (int i = 0; i < shotsFired; i++)
+            {
+                totalDamage += Random.Range(weapon.minDamage, weapon.maxDamage + 1);
+            }
+            AddCombatLog($"Вы выпустили очередь из {shotsFired} патронов!");
+        }
+        else
+        {
+            // Одиночный выстрел
+            shotsFired = 1;
+            totalDamage = weapon.GetWeaponDamage();
+            weapon.UseInCombat(); // Старый метод для одиночных выстрелов
+        }
+
+        // Наносим урон
+        currentEnemyHealth -= totalDamage;
+
+        // Тратим энергию
         playerStats.ChangeEnergy(-energyCost);
 
-        // Сообщение об атаке
-        AddCombatLog($"Вы атаковали {weaponType} и нанесли {damage} урона");
+        AddCombatLog($"Вы атаковали {weaponType} и нанесли {totalDamage} урона ({shotsFired} выстрелов)");
 
         UpdateCombatUI();
 
@@ -254,6 +286,9 @@ public class CombatSystem : MonoBehaviour
         StartCoroutine(PerformEscapeSequence());
     }
 
+    // 🔹 ИСПРАВЛЕННЫЙ МЕТОД ПОБЕГА
+    // 🔹 ИСПРАВЛЕННЫЙ МЕТОД ПОБЕГА
+    // 🔹 ИСПРАВЛЕННЫЙ МЕТОД ПОБЕГА
     IEnumerator PerformEscapeSequence()
     {
         playerTurn = false;
@@ -266,7 +301,13 @@ public class CombatSystem : MonoBehaviour
             AddCombatLog("Вы успешно сбежали");
             yield return new WaitForSeconds(2f);
 
-            // ВОЗВРАТ В ХОДКУ ПРИ УСПЕШНОМ ПОБЕГЕ
+            // 🔹 ВОЗВРАЩАЕМ ОБЫЧНУЮ КНОПКУ ИНВЕНТАРЯ (ЗАМЕНИЛИ UnlockInventory)
+            if (inventoryUI != null)
+            {
+                inventoryUI.SetInventoryButtonState(false);
+            }
+
+            // 🔹 ВОЗВРАТ В ХОДКУ ПРИ УСПЕШНОМ ПОБЕГЕ
             if (hodkaManager != null)
             {
                 hodkaManager.ReturnToJourneyAfterEscape();
@@ -281,6 +322,8 @@ public class CombatSystem : MonoBehaviour
         }
     }
 
+
+
     // КНОПКА: Перезарядка
     public void OnReload()
     {
@@ -288,13 +331,45 @@ public class CombatSystem : MonoBehaviour
         StartCoroutine(PerformReloadSequence());
     }
 
+    // 🔹 ИСПРАВЛЕННЫЙ МЕТОД ПЕРЕЗАРЯДКИ
+    // 🔹 УЛУЧШЕННЫЙ МЕТОД ПЕРЕЗАРЯДКИ В БОЮ
+    // 🔹 ПОЛНЫЙ МЕТОД ПЕРЕЗАРЯДКИ С ОБОИМИ СЛОТАМИ
+    // 🔹 УЛУЧШЕННЫЙ МЕТОД ПЕРЕЗАРЯДКИ
     IEnumerator PerformReloadSequence()
     {
         playerTurn = false;
         SetButtonsInteractable(false);
 
-        AddCombatLog("Перезарядка");
+        AddCombatLog("Перезарядка...");
         playerStats.ChangeEnergy(-10);
+
+        // 🔹 ИСПОЛЬЗУЕМ НОВЫЙ МЕНЕДЖЕР ПЕРЕЗАРЯДКИ
+        ReloadManager reloadManager = FindFirstObjectByType<ReloadManager>();
+        if (reloadManager == null)
+        {
+            reloadManager = gameObject.AddComponent<ReloadManager>();
+        }
+
+        var reloadResult = reloadManager.ReloadAllWeapons();
+
+        // 🔹 ФОРМИРУЕМ СООБЩЕНИЕ О РЕЗУЛЬТАТЕ
+        if (reloadResult.anyWeaponReloaded)
+        {
+            AddCombatLog("Перезарядка выполнена!");
+
+            if (reloadResult.mainWeaponReloaded)
+                AddCombatLog("Основное оружие перезаряжено");
+
+            if (reloadResult.secondaryWeaponReloaded)
+                AddCombatLog("Доп. оружие перезаряжено");
+        }
+        else
+        {
+            AddCombatLog("Не удалось перезарядить оружие. Проверьте патроны.");
+        }
+
+        // 🔹 ОБНОВЛЯЕМ UI
+        UpdateCombatUI();
 
         yield return new WaitForSeconds(2f);
         StartCoroutine(EnemyTurnSequence());
@@ -357,16 +432,17 @@ public class CombatSystem : MonoBehaviour
 
     // В метод EndCombat добавляем разблокировку:
     // В метод EndCombat добавляем разблокировку:
+    // 🔹 ИСПРАВЛЕННЫЙ МЕТОД ЗАВЕРШЕНИЯ БОЯ
     void EndCombat(bool victory)
     {
-        Debug.Log("🏁 КОНЕЦ БОЯ - РАЗБЛОКИРУЕМ ИНВЕНТАРЬ");
+        Debug.Log("🏁 КОНЕЦ БОЯ - ВОЗВРАЩАЕМ КНОПКУ ИНВЕНТАРЯ");
 
         combatActive = false;
 
-        // 🔹 РАЗБЛОКИРОВКА ИНВЕНТАРЯ
+        // 🔹 ВОЗВРАЩАЕМ ОБЫЧНУЮ КНОПКУ ИНВЕНТАРЯ
         if (inventoryUI != null)
         {
-            inventoryUI.UnlockInventory();
+            inventoryUI.SetInventoryButtonState(false); // Бой завершен
         }
 
         if (victory)
@@ -379,14 +455,22 @@ public class CombatSystem : MonoBehaviour
         StartCoroutine(ReturnToJourneyMode());
     }
 
+    // 🔹 ИСПРАВЛЕННЫЙ МЕТОД ВОЗВРАТА В ХОДКУ
+    // 🔹 ИСПРАВЛЕННЫЙ МЕТОД ВОЗВРАТА В ХОДКУ
     IEnumerator ReturnToJourneyMode()
     {
         yield return new WaitForSeconds(2f);
 
-        // ВОЗВРАТ В ХОДКУ ЧЕРЕЗ HODKA MANAGER
+        // 🔹 ВОЗВРАТ В ХОДКУ ЧЕРЕЗ HODKA MANAGER
         if (hodkaManager != null)
         {
             hodkaManager.EndCombatAndReturnToJourney();
+        }
+
+        // 🔹 ВОЗВРАЩАЕМ ОБЫЧНУЮ КНОПКУ ИНВЕНТАРЯ (ЗАМЕНИЛИ UnlockInventory)
+        if (inventoryUI != null)
+        {
+            inventoryUI.SetInventoryButtonState(false); // Бой завершен
         }
 
         combatPanel.SetActive(false);
@@ -422,13 +506,22 @@ public class CombatSystem : MonoBehaviour
     }
 
     // ВОЗВРАТ НА СТАНЦИЮ ПОСЛЕ СМЕРТИ
+    // 🔹 ИСПРАВЛЕННЫЙ МЕТОД СМЕРТИ
+    // 🔹 ИСПРАВЛЕННЫЙ МЕТОД СМЕРТИ
+    // 🔹 ИСПРАВЛЕННЫЙ МЕТОД СМЕРТИ
     IEnumerator ReturnToStationAfterDeath()
     {
         yield return new WaitForSeconds(2f);
 
+        // 🔹 ВОЗВРАЩАЕМ ОБЫЧНУЮ КНОПКУ ИНВЕНТАРЯ (ЗАМЕНИЛИ UnlockInventory)
+        if (inventoryUI != null)
+        {
+            inventoryUI.SetInventoryButtonState(false);
+        }
+
         combatPanel.SetActive(false);
 
-        // ВОЗВРАТ НА СТАНЦИЮ ЧЕРЕЗ STATION MANAGER
+        // 🔹 ВОЗВРАТ НА СТАНЦИЮ ЧЕРЕЗ STATION MANAGER
         if (stationManager != null)
         {
             stationManager.ReturnToStationAfterDeath();
