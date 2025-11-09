@@ -23,6 +23,7 @@ public class TraderManager : MonoBehaviour
     public TMP_Text itemNameText;
     public TMP_Text itemDescriptionText;
     public TMP_Text itemPriceText;
+    public TMP_Text itemQuantityText; // 🔹 НОВОЕ: текст количества
     public Button buyButton;
     public Button cancelButton;
 
@@ -94,14 +95,14 @@ public class TraderManager : MonoBehaviour
             Destroy(child.gameObject);
 
         // Создаем кнопки для каждого предмета торговца
-        foreach (Item item in traderInventory.availableItems)
+        foreach (TraderItem traderItem in traderInventory.availableItems)
         {
             GameObject buttonGO = Instantiate(traderItemButtonPrefab, traderItemsGrid);
             TraderItemButton button = buttonGO.GetComponent<TraderItemButton>();
 
             if (button != null)
             {
-                button.Setup(item, this);
+                button.Setup(traderItem.item, this);
             }
         }
 
@@ -115,19 +116,39 @@ public class TraderManager : MonoBehaviour
 
         if (itemDescriptionPanel != null && item != null)
         {
+            // 🔹 ПОЛУЧАЕМ КОЛИЧЕСТВО ИЗ TRADER INVENTORY
+            int quantity = GetItemQuantityFromTrader(item);
+
+            // 🔹 ЦЕНА ОСТАЕТСЯ ОДНА И ТА ЖЕ, НЕ УМНОЖАЕМ НА КОЛИЧЕСТВО
+            int price = item.buyPrice;
+
             // Заполняем информацию о предмете
             itemIcon.sprite = item.icon;
             itemIcon.enabled = item.icon != null;
             itemNameText.text = item.itemName;
             itemDescriptionText.text = item.description;
-            itemPriceText.text = $"Цена: {item.buyPrice} руб";
+            itemPriceText.text = $"Цена: {price} руб";
+
+            // 🔹 ПОКАЗЫВАЕМ КОЛИЧЕСТВО
+            if (itemQuantityText != null)
+            {
+                if (quantity > 1)
+                {
+                    itemQuantityText.text = $"Количество: {quantity} шт.";
+                    itemQuantityText.gameObject.SetActive(true);
+                }
+                else
+                {
+                    itemQuantityText.gameObject.SetActive(false);
+                }
+            }
 
             // Настраиваем кнопку "Купить"
             buyButton.onClick.RemoveAllListeners();
             buyButton.onClick.AddListener(BuyItem);
 
-            // Проверяем хватает ли денег
-            bool canAfford = playerWallet.HasEnoughMoney(item.buyPrice);
+            // Проверяем хватает ли денег (цена не умножается на количество)
+            bool canAfford = playerWallet.HasEnoughMoney(price);
             buyButton.interactable = canAfford;
 
             // Меняем текст кнопки в зависимости от возможности покупки
@@ -137,10 +158,11 @@ public class TraderManager : MonoBehaviour
                 if (canAfford)
                 {
                     buyButtonText.text = "Купить";
+                    buyButtonText.color = Color.white;
                 }
                 else
                 {
-                    buyButtonText.text = "Нехватает пулек";
+                    buyButtonText.text = "Нехватает денег";
                     buyButtonText.color = Color.gray;
                 }
             }
@@ -159,7 +181,7 @@ public class TraderManager : MonoBehaviour
             }
 
             itemDescriptionPanel.SetActive(true);
-            Debug.Log($"✅ Показано описание предмета: {item.itemName}");
+            Debug.Log($"✅ Показано описание предмета: {item.itemName} (x{quantity} за {price} руб)");
         }
     }
 
@@ -174,7 +196,7 @@ public class TraderManager : MonoBehaviour
         }
     }
 
-    // 🔹 ПОКУПКА ПРЕДМЕТА
+    // 🔹 ОБНОВЛЕННЫЙ МЕТОД ПОКУПКИ С УЧЕТОМ КОЛИЧЕСТВА
     void BuyItem()
     {
         if (selectedItem == null)
@@ -183,54 +205,54 @@ public class TraderManager : MonoBehaviour
             return;
         }
 
-        if (!playerWallet.HasEnoughMoney(selectedItem.buyPrice))
+        // 🔹 ПОЛУЧАЕМ КОЛИЧЕСТВО ИЗ TRADER INVENTORY
+        int quantity = GetItemQuantityFromTrader(selectedItem);
+
+        // 🔹 ЦЕНА ОСТАЕТСЯ ОДНА И ТА ЖЕ, НЕ УМНОЖАЕМ НА КОЛИЧЕСТВО
+        int price = selectedItem.buyPrice;
+
+        if (!playerWallet.HasEnoughMoney(price))
         {
             Debug.Log("❌ Недостаточно денег для покупки");
             return;
         }
 
-        // Пытаемся добавить к существующему стаку
-        bool itemAdded = false;
+        // 🔹 ДОБАВЛЯЕМ УКАЗАННОЕ КОЛИЧЕСТВО ПРЕДМЕТОВ
+        bool allItemsAdded = true;
+        int itemsAdded = 0;
 
-        if (selectedItem.isStackable)
+        for (int i = 0; i < quantity; i++)
         {
-            foreach (InventoryItem invItem in playerInventory.items)
+            if (AddItemToInventory(selectedItem))
             {
-                // Проверяем: тот же предмет, стакаемый и есть место в стаке
-                if (invItem.item.itemName == selectedItem.itemName &&
-                    invItem.item.isStackable &&
-                    invItem.count < invItem.item.maxStackSize)
-                {
-                    // Увеличиваем количество существующего предмета
-                    invItem.count++;
-                    itemAdded = true;
-                    playerWallet.SpendMoney(selectedItem.buyPrice);
-                    Debug.Log($"✅ Добавлен к стаку: {selectedItem.itemName}. Теперь: {invItem.count}");
-                    break;
-                }
-            }
-        }
-
-        // Если не стакали - создаем новый предмет в инвентаре
-        if (!itemAdded)
-        {
-            // Создаем копию предмета
-            Item itemCopy = Instantiate(selectedItem);
-
-            // Пытаемся добавить в инвентарь
-            if (playerInventory.AddItem(itemCopy))
-            {
-                // Списание денег
-                playerWallet.SpendMoney(selectedItem.buyPrice);
-                Debug.Log($"✅ Куплено: {selectedItem.itemName} за {selectedItem.buyPrice} руб");
+                itemsAdded++;
             }
             else
             {
-                Debug.Log("❌ Не хватает места в инвентаре");
-                Destroy(itemCopy); // Уничтожаем копию если не добавили
-                ShowInventoryFullMessage();
-                return;
+                allItemsAdded = false;
+                break;
             }
+        }
+
+        if (itemsAdded > 0)
+        {
+            // 🔹 СПИСЫВАЕМ СТАНДАРТНУЮ ЦЕНУ (НЕ УМНОЖЕННУЮ НА КОЛИЧЕСТВО)
+            playerWallet.SpendMoney(price);
+
+            if (allItemsAdded)
+            {
+                Debug.Log($"✅ Куплено {quantity} шт. {selectedItem.itemName} за {price} руб");
+            }
+            else
+            {
+                Debug.Log($"⚠️ Куплено {itemsAdded} из {quantity} шт. {selectedItem.itemName} за {price} руб (не хватило места)");
+            }
+        }
+        else
+        {
+            Debug.Log("❌ Не хватило места в инвентаре для покупки");
+            ShowInventoryFullMessage();
+            return;
         }
 
         // Обновляем UI
@@ -241,14 +263,48 @@ public class TraderManager : MonoBehaviour
             inventoryUI.RefreshUI();
         }
 
-        // Показываем сообщение об успехе
         Debug.Log($"🎉 Успешная покупка! Осталось денег: {playerWallet.CurrentMoney} руб");
+    }
+
+    // 🔹 ПОЛУЧИТЬ КОЛИЧЕСТВО ПРЕДМЕТА ИЗ TRADER INVENTORY
+    private int GetItemQuantityFromTrader(Item item)
+    {
+        foreach (TraderItem traderItem in traderInventory.availableItems)
+        {
+            if (traderItem.item == item)
+            {
+                return traderItem.quantity;
+            }
+        }
+        return 1; // по умолчанию 1
+    }
+
+    // 🔹 МЕТОД ДЛЯ ДОБАВЛЕНИЯ ПРЕДМЕТА В ИНВЕНТАРЬ
+    private bool AddItemToInventory(Item item)
+    {
+        // Пытаемся добавить к существующему стаку
+        if (item.isStackable)
+        {
+            foreach (InventoryItem invItem in playerInventory.items)
+            {
+                if (invItem.item.itemName == item.itemName &&
+                    invItem.item.isStackable &&
+                    invItem.count < invItem.item.maxStackSize)
+                {
+                    invItem.count++;
+                    return true;
+                }
+            }
+        }
+
+        // Создаем новый предмет в инвентаре
+        Item itemCopy = Instantiate(item);
+        return playerInventory.AddItem(itemCopy);
     }
 
     // 🔹 СООБЩЕНИЕ О ПЕРЕПОЛНЕННОМ ИНВЕНТАРЕ
     private void ShowInventoryFullMessage()
     {
-        // Можно добавить всплывающее сообщение или изменить текст кнопки
         TMP_Text buyButtonText = buyButton.GetComponentInChildren<TMP_Text>();
         if (buyButtonText != null)
         {
